@@ -117,3 +117,18 @@ class transactionTest(BaseFunctionalTest):
             pass
 
         self.assertEqual(self.handler.info, [])
+
+    def test_fill_missing_fields(self):
+        self.configure()
+        from pyramid_marrowmailer import get_mailer
+        mailer = get_mailer(self.request)
+
+        import transaction
+        with transaction.manager:
+            message = mailer.new(subject='foobar', to='foobar@example.com', plain='hi')
+            message.send()
+            self.assertEqual(self.handler.info, [])
+
+        self.assertEqual(message.author, ["foobar@foo.com"])
+        self.assertEqual(message.sender, "foobar@foo.com")
+        self.assertTrue('DELIVER' in self.handler.info[1])

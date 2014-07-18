@@ -55,9 +55,20 @@ class MailDataManager(object):
 class TransactionMailer(Mailer):
     """Mailer that obeys zope transaction for sending emails"""
 
-    def send(self, *a, **kw):
+    def fix_sender_and_author(self, message):
+        if not message.sender:
+            message.sender = self.config['message.author']
+        if not message.author:
+            message.author = self.config['message.author']
+
+    def send(self, message, *a, **kw):
+        self.fix_sender_and_author(message)
         send_ = super(TransactionMailer, self).send
-        transaction.get().join(MailDataManager(send_, a, kw))
+        transaction.get().join(MailDataManager(send_, [message] + list(a), kw))
+
+    def send_immediately(self, message, *a, **kw):
+        self.fix_sender_and_author(message)
+        super(TransactionMailer, self).send(message, *a, **kw)
 
 
 def includeme(config):
